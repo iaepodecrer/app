@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Eventos e Tema - Demonstração</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos específicos para a demonstração */
+        .demo-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            background-color: var(--card-bg);
+        }
+        
+        .demo-section h2 {
+            margin-top: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .event-log {
+            height: 200px;
+            overflow-y: auto;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 1rem;
+            font-family: monospace;
+            margin: 1rem 0;
+            color: var(--text-color);
+        }
+        
+        .event-item {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-left: 3px solid var(--primary-color);
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .event-timestamp {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+        
+        .event-name {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .event-data {
+            margin-top: 0.25rem;
+            padding-left: 1rem;
+            color: var(--info-color);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .notifications-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 300px;
+            max-width: 100%;
+            z-index: 9999;
+        }
+        
+        .notification-item {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: var(--border-radius-md);
+            margin-bottom: 1rem;
+            padding: 1rem;
+            display: flex;
+            align-items: flex-start;
+            opacity: 0;
+            transform: translateX(30px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .notification-item.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .notification-item.success { border-left-color: var(--success-color); }
+        .notification-item.error { border-left-color: var(--danger-color); }
+        .notification-item.warning { border-left-color: var(--warning-color); }
+        .notification-item.info { border-left-color: var(--info-color); }
+        
+        .notification-icon {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+        
+        .notification-icon i {
+            opacity: 0.8;
+        }
+        
+        .notification-item.success .notification-icon i { color: var(--success-color); }
+        .notification-item.error .notification-icon i { color: var(--danger-color); }
+        .notification-item.warning .notification-icon i { color: var(--warning-color); }
+        .notification-item.info .notification-icon i { color: var(--info-color); }
+        
+        .notification-content {
+            flex: 1;
+            padding-right: 1.5rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: auto;
+            line-height: 1;
+        }
+        
+        .close-btn:hover {
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="nav-header">
+            <h2>CrossDebate</h2>
+        </div>
+        <ul>
+            <li><a href="#" class="active"><i class="fas fa-flask"></i> <span>Demonstração</span></a></li>
+            <li><a href="#"><i class="fas fa-bell"></i> <span>Notificações</span></a></li>
+            <li><a href="#"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>
+        </ul>
+        <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-left"></i></button>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Sistema de Eventos e Tema</h1>
+            </div>
+            <div class="card-body">
+                <p>Esta página demonstra o uso do sistema de eventos personalizado (EventBus) e do gerenciador de tema unificado.</p>
+                
+                <!-- Seção de demonstração do EventBus -->
+                <div class="demo-section">
+                    <h2>Sistema de Eventos (EventBus)</h2>
+                    <p>O EventBus permite comunicação desacoplada entre componentes através de eventos nomeados.</p>
+                    
+                    <h3>Log de Eventos</h3>
+                    <div class="event-log" id="event-log">
+                        <div class="event-item">
+                            <span class="event-timestamp">Aguardando eventos...</span>
+                        </div>
+                    </div>
+                    
+                    <h3>Publicar Eventos</h3>
+                    <div class="button-group">
+                        <button class="button publish-event" data-event="app:userLogin" data-data='{"userId": 123, "username": "usuario_teste"}'>Login de Usuário</button>
+                        <button class="button publish-event" data-event="app:dataLoaded" data-data='{"items": 42, "source": "api"}'>Dados Carregados</button>
+                        <button class="button publish-event" data-event="ui:sidebarToggle">Toggle Sidebar</button>
+                    </div>
+                    
+                    <h3>Notificações via EventBus</h3>
+                    <div class="button-group">
+                        <button class="button" data-notification="info" data-message="Esta é uma notificação informativa">Info</button>
+                        <button class="button" data-notification="success" data-message="Operação concluída com sucesso!">Sucesso</button>
+                        <button class="button" data-notification="warning" data-message="Atenção: esta ação é irreversível">Aviso</button>
+                        <button class="button" data-notification="error" data-message="Erro ao processar a solicitação">Erro</button>
+                    </div>
+                </div>
+                
+                <!-- Seção de demonstração do Tema -->
+                <div class="demo-section">
+                    <h2>Sistema de Tema Unificado</h2>
+                    <p>O gerenciador de tema unifica todas as funcionalidades relacionadas a tema claro/escuro.</p>
+                    
+                    <h3>Preferência de Tema</h3>
+                    <div class="form-group">
+                        <label for="theme">Escolha o tema:</label>
+                        <select id="theme" name="theme" class="form-control">
+                            <option value="light">Claro</option>
+                            <option value="dark">Escuro</option>
+                            <option value="auto">Auto (Preferência do Sistema)</option>
+                        </select>
+                    </div>
+                    
+                    <h3>Alternância Rápida</h3>
+                    <div class="button-group">
+                        <button id="themeToggleBtn" class="button primary">Alternar Tema</button>
+                    </div>
+                    
+                    <h3>Integração com EventBus</h3>
+                    <p>Quando o tema muda, um evento é publicado no EventBus, permitindo que outros componentes reajam à mudança.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botão de alternância de tema -->
+    <button class="theme-toggle" id="theme-toggle" title="Alternar tema">
+        <i class="fas fa-moon dark-icon"></i>
+        <i class="fas fa-sun light-icon" style="display: none;"></i>
+    </button>
+    
+    <!-- Scripts Font Awesome -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
+    <!-- Script principal -->
+    <script type="module">
+        import app from './js/appController.js';
+        import eventBus, { subscribe, publish } from './js/utils/eventBus.js';
+        import { initTheme, toggleTheme, EVENTS as THEME_EVENTS } from './js/utils/themeManager.js';
+        
+        // Configurar logger de eventos para demonstração
+        const eventLog = document.getElementById('event-log');
+        
+        // Função para adicionar evento ao log
+        function logEvent(event, data) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logItem = document.createElement('div');
+            logItem.className = 'event-item';
+            
+            const dataStr = typeof data === 'object' ? 
+                JSON.stringify(data, null, 2) : 
+                String(data);
+            
+            logItem.innerHTML = `
+                <span class="event-timestamp">${timestamp}</span>
+                <span class="event-name">${event}</span>
+                <div class="event-data">${dataStr}</div>
+            `;
+            
+            eventLog.appendChild(logItem);
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+        
+        // Registrar para todos os eventos para logging
+        const unsubscribeAll = eventBus.subscribe('*', (data) => {
+            logEvent(data.eventName, data.eventData);
+        });
+        
+        // Configurar botões de publicação de eventos
+        document.querySelectorAll('.publish-event').forEach(button => {
+            button.addEventListener('click', () => {
+                const eventName = button.dataset.event;
+                let eventData = {};
+                
+                try {
+                    if (button.dataset.data) {
+                        eventData = JSON.parse(button.dataset.data);
+                    }
+                } catch (e) {
+                    console.error('Erro ao analisar dados do evento:', e);
+                }
+                
+                publish(eventName, eventData);
+            });
+        });
+        
+        // Logger de eventos
+        document.addEventListener('DOMContentLoaded', () => {
+            logEvent('app:initialized', { timestamp: new Date().toISOString() });
+        });
+        
+        // Registrar para eventos de tema
+        subscribe(THEME_EVENTS.THEME_CHANGED, (data) => {
+            logEvent(THEME_EVENTS.THEME_CHANGED, data);
+        });
+        
+        subscribe(THEME_EVENTS.THEME_TOGGLED, (data) => {
+            logEvent(THEME_EVENTS.THEME_TOGGLED, data);
+        });
+        
+        subscribe(THEME_EVENTS.SYSTEM_PREFERENCE_CHANGED, (data) => {
+            logEvent(THEME_EVENTS.SYSTEM_PREFERENCE_CHANGED, data);
+        });
+    </script>
+</body>
+</html>

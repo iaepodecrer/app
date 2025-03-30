@@ -1,0 +1,6 @@
+# ...existing code...
+# Old log path
+# log_file = /media/sema/400E99720E9961A8/crossdebate/app.log
+# New log path
+log_file = /media/sema/400E99720E9961A8/crossdebate/backend/app.log
+# ...existing code...

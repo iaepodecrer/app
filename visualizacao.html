@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualização - CrossDebate</title>
+
+    <!-- Resource hints -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script">
+    <link rel="preload" href="https://cdn.plot.ly/plotly-latest.min.js" as="script">
+    <link rel="preload" href="https://d3js.org/d3.v7.min.js" as="script">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Specific Styles for Visualization Page -->
+    <style>
+        .visualization-container {
+            max-width: 1400px; /* Allow wider content */
+            margin: 0 auto;
+        }
+
+        .filters-bar {
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: var(--border-radius-md);
+            margin-bottom: 20px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap; /* Allow filters to wrap on smaller screens */
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .filter-select, .filter-input {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-family: inherit;
+            min-width: 150px; /* Minimum width for selects */
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Responsive grid */
+            gap: 20px;
+        }
+
+        .chart-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+            min-height: var(--chart-height, 400px); /* Use variable or default */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-card h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        .chart-container {
+            flex-grow: 1; /* Allow chart canvas/div to fill space */
+            position: relative; /* Needed for Chart.js responsiveness */
+        }
+
+        .chart-container canvas {
+            max-width: 100%; /* Ensure canvas doesn't overflow */
+            height: auto;
+        }
+
+        /* Loading state for charts */
+        .chart-card .loading-spinner {
+            margin: auto; /* Center spinner */
+        }
+
+        /* Estilos para visualizações avançadas */
+        .advanced-visualization {
+            width: 100%;
+            height: 100%;
+            min-height: 350px;
+        }
+        
+        /* Estilos para tooltips interativos */
+        .d3-tooltip {
+            position: absolute;
+            padding: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            pointer-events: none;
+            font-size: 0.8rem;
+            z-index: 1000;
+            box-shadow: var(--box-shadow);
+        }
+        
+        /* Estilos para controles de interação */
+        .chart-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .chart-control-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .chart-control-btn:hover {
+            background: var(--hover-bg);
+        }
+        
+        /* Estilos para a seção de insights */
+        .insights-container {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+        }
+        
+        .insights-container h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .no-insights {
+            color: var(--text-muted);
+            font-style: italic;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .insights-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding: 10px;
+            background-color: var(--hover-bg);
+            border-radius: var(--border-radius-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .insight-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .insight-item i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-top: 2px;
+        }
+        
+        .insight-content {
+            flex-grow: 1;
+        }
+        
+        .insight-description {
+            margin: 0 0 5px 0;
+            font-weight: 500;
+        }
+        
+        .insight-metadata {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .confidence-bar {
+            width: 100%;
+            height: 4px;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .confidence-level {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        /* Cores diferentes por tipo de insight */
+        .insight-trend i {
+            color: #2ecc71; /* verde */
+        }
+        
+        .insight-correlation i {
+            color: #3498db; /* azul */
+        }
+        
+        .insight-anomaly i {
+            color: #e74c3c; /* vermelho */
+        }
+        
+        .insight-cyclical i {
+            color: #9b59b6; /* roxo */
+        }
+        
+        /* Botão de ver mais */
+        .view-more-btn {
+            display: block;
+            margin: 10px auto 0;
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: 5px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        
+        .view-more-btn:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        /* Modal de insights completos */
+        .insights-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        
+        .insights-modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: var(--border-radius-lg);
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .insights-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .insights-modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .close-modal-btn {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        
+        .insights-section {
+            margin-bottom: 25px;
+        }
+        
+        .insights-section-title {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 5px;
+        }
+        
+        /* Estilos para o modal de exportação */
+        .export-format-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .export-format-modal.visible {
+            opacity: 1;
+        }
+        
+        .export-format-modal-content {
+            background-color: var(--card-bg);
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: var(--border-radius-lg);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .export-format-modal.visible .export-format-modal-content {
+            transform: translateY(0);
+        }
+        
+        .export-format-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .export-format-modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .export-format-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .export-format-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .export-format-btn:hover {
+            background-color: var(--hover-bg);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .export-format-btn i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        
+        .export-format-btn span {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border-color);
+        }
+        
+        .export-options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .export-options input[type="checkbox"] {
+            accent-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar atualizada com seções agrupadas -->
+        <div class="sidebar">
+            <div class="nav-header">
+                <h2>CrossDebate</h2>
+            </div>
+            
+            <!-- Menu com seções agrupadas -->
+            <ul>
+                <li class="nav-section">
+                    <span class="section-title">Principal</span>
+                    <ul>
+                        <li>
+                            <a href="index.html">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <li class="nav-section">
+                    <span class="section-title">Análises</span>
+                    <ul>
+                        <li>
+                            <a href="analise.html">
+                                <i class="fas fa-microscope"></i>
+                                <span>Análise HoT</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="visualizacao.html" class="active">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Visualizações</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="performance.html">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Performance</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <li class="nav-section">
+                    <span class="section-title">Sistema</span>
+                    <ul>
+                        <li>
+                            <a href="configuracoes.html">
+                                <i class="fas fa-cog"></i>
+                                <span>Configurações</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" id="helpLink">
+                                <i class="fas fa-question-circle"></i>
+                                <span>Ajuda</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <!-- Botão de alternância da sidebar -->
+            <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-chevron-left"></i></button>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Botão de alternância de tema -->
+            <div class="theme-toggle" id="themeToggle" title="Alternar Tema">
+                <i class="fas fa-moon"></i>
+            </div>
+
+            <!-- Barra de pesquisa global -->
+            <div class="global-search">
+                <input type="text" id="globalSearchInput" placeholder="Buscar visualizações, métricas, dados..." class="form-control">
+                <i class="fas fa-search"></i>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <h1>Visualização de Dados</h1>
+            
+            <!-- Novo componente de breadcrumbs -->
+            <div class="breadcrumbs">
+                <a href="index.html">Dashboard</a> <i class="fas fa-chevron-right"></i> <span>Visualização de Dados</span>
+            </div>
+            
+            <p>Explore as métricas e padrões dos debates através de gráficos interativos.</p>
+
+            <!-- Links de Acesso Rápido -->
+            <div class="quick-access">
+                <a href="#" class="quick-link" id="newVisualizationBtn">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Nova Visualização</span>
+                </a>
+                <a href="#" class="quick-link" id="exportChartBtn">
+                    <i class="fas fa-file-export"></i>
+                    <span>Exportar Gráficos</span>
+                </a>
+                <a href="#" class="quick-link" id="dataSourceBtn">
+                    <i class="fas fa-database"></i>
+                    <span>Fontes de Dados</span>
+                </a>
+            </div>
+
+            <!-- Barra de filtros -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label for="debateTypeFilter" class="filter-label">Tipo de Debate:</label>
+                    <select id="debateTypeFilter" class="filter-select">
+                        <option value="all">Todos</option>
+                        <option value="politics">Política</option>
+                        <option value="science">Ciência</option>
+                        <option value="philosophy">Filosofia</option>
+                        <!-- Add more types as needed -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="modelFilter" class="filter-label">Modelo:</label>
+                    <select id="modelFilter" class="filter-select">
+                        <option value="all">Todos</option>
+                        <option value="model_a">Modelo A</option>
+                        <option value="model_b">Modelo B</option>
+                        <option value="model_c">Modelo C</option>
+                        <!-- Add more models as needed -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="timeRangeFilter" class="filter-label">Período:</label>
+                    <select id="timeRangeFilter" class="filter-select">
+                        <option value="1h">Última Hora</option>
+                        <option value="24h">Últimas 24 Horas</option>
+                        <option value="7d">Últimos 7 Dias</option>
+                        <option value="30d">Últimos 30 Dias</option>
+                        <option value="all">Todo o Período</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="metricFilter" class="filter-label">Métrica Principal:</label>
+                    <select id="metricFilter" class="filter-select">
+                        <option value="engagement">Engajamento</option>
+                        <option value="sentiment">Sentimento</option>
+                        <option value="coherence">Coerência</option>
+                        <option value="multidimensional">Multidimensional</option>
+                        <!-- Add more metrics -->
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="visualizationTypeFilter" class="filter-label">Tipo de Visualização:</label>
+                    <select id="visualizationTypeFilter" class="filter-select">
+                        <option value="standard">Padrão</option>
+                        <option value="advanced">Avançada</option>
+                        <option value="interactive">Interativa</option>
+                    </select>
+                </div>
+                <button id="applyFiltersButton" class="button primary">Aplicar Filtros</button>
+            </div>
+
+            <!-- Nova seção para insights automáticos -->
+            <div class="insights-container" id="insightsContainer">
+                <!-- Insights serão preenchidos dinamicamente pelo JavaScript -->
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Chart Card 1: Example Line Chart (Chart.js) -->
+                <div class="chart-card draggable">
+                    <h4>Evolução do Engajamento</h4>
+                    <div class="chart-container">
+                        <canvas id="engagementChart"></canvas>
+                        <div class="loading-spinner" id="engagementChartSpinner"></div>
+                    </div>
+                </div>
+
+                <!-- Chart Card 2: Example Doughnut Chart (Chart.js) -->
+                <div class="chart-card draggable">
+                    <h4>Distribuição de Sentimento</h4>
+                    <div class="chart-container">
+                        <canvas id="sentimentChart"></canvas>
+                        <div class="loading-spinner" id="sentimentChartSpinner"></div>
+                    </div>
+                </div>
+
+                <!-- Chart Card 3: Example 3D Surface Plot (Plotly) -->
+                <div class="chart-card draggable">
+                    <h4>Análise Multidimensional EEG</h4>
+                    <div class="chart-container">
+                        <div id="eegSurfacePlot" class="advanced-visualization"></div>
+                        <div class="loading-spinner" id="eegSurfacePlotSpinner"></div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control-btn" id="resetEegView">Reset Vista</button>
+                        <button class="chart-control-btn" id="toggleEegAnimations">Animação</button>
+                    </div>
+                </div>
+
+                <!-- Chart Card 4: Network Graph (D3.js) -->
+                <div class="chart-card draggable">
+                    <h4>Rede de Correlações</h4>
+                    <div class="chart-container">
+                        <div id="correlationNetwork" class="advanced-visualization"></div>
+                        <div class="loading-spinner" id="correlationNetworkSpinner"></div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-control-btn" id="zoomIn">Zoom +</button>
+                        <button class="chart-control-btn" id="zoomOut">Zoom -</button>
+                        <button class="chart-control-btn" id="resetZoom">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Chart Card 5: Interactive Heatmap (Plotly) -->
+                <div class="chart-card draggable">
+                    <h4>Mapa de Calor de Atividade</h4>
+                    <div class="chart-container">
+                        <div id="activityHeatmap" class="advanced-visualization"></div>
+                        <div class="loading-spinner" id="activityHeatmapSpinner"></div>
+                    </div>
+                </div>
+
+                <!-- Chart Card 6: Parallel Coordinates (D3.js) -->
+                <div class="chart-card draggable">
+                    <h4>Coordenadas Paralelas de Métricas</h4>
+                    <div class="chart-container">
+                        <div id="parallelCoordinates" class="advanced-visualization"></div>
+                        <div class="loading-spinner" id="parallelCoordinatesSpinner"></div>
+                    </div>
+                </div>
+            </div> <!-- Fim .charts-grid -->
+
+        </div> <!-- Fim .main-content -->
+    </div> <!-- Fim .app-container -->
+
+    <!-- Menu flutuante para ações rápidas -->
+    <div class="floating-menu" id="floatingMenu">
+        <button class="floating-menu-button" id="floatingMenuButton">
+            <i class="fas fa-plus"></i>
+        </button>
+        <div class="floating-menu-items">
+            <a href="#" class="floating-menu-item" id="quickNewVisualizationBtn">
+                <i class="fas fa-chart-pie"></i>
+                <span>Nova Visualização</span>
+            </a>
+            <a href="#" class="floating-menu-item" id="quickExportBtn">
+                <i class="fas fa-file-export"></i>
+                <span>Exportar Dados</span>
+            </a>
+            <a href="#" class="floating-menu-item" id="quickHelpBtn">
+                <i class="fas fa-question-circle"></i>
+                <span>Ajuda</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Elemento para Notificações -->
+    <div class="notification" id="notification">
+        <i id="notificationIcon" class="fas fa-check-circle"></i>
+        <span id="notificationText"></span>
+    </div>
+
+    <!-- Indicador de Carregamento de Página -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-animation">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--primary-color)" stroke-width="5" />
+                <path id="loaderPath" d="M50,5 A45,45 0 0,1 95,50" fill="none" stroke="var(--accent-color)" stroke-width="5" stroke-linecap="round" />
+            </svg>
+        </div>
+        <p>Carregando visualizações...</p>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Charting Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/interactivity.js" defer></script>
+    <script src="js/visualizations.js" defer></script>
+    <script src="js/advanced_visualizations.js" defer></script>
+    <script src="js/notifications.js" defer></script>
+
+</body>
+</html>

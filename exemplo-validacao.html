@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemplo de Validação e Tema</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Estilos específicos para formulário */
+        .form-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .error-message {
+            display: none;
+            color: var(--danger-color);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .form-control.error {
+            border-color: var(--danger-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="nav-header">
+            <h2>CrossDebate</h2>
+        </div>
+        <ul>
+            <li><a href="#"><i class="fas fa-home"></i> <span>Início</span></a></li>
+            <li><a href="#" class="active"><i class="fas fa-check-circle"></i> <span>Validação</span></a></li>
+            <li><a href="#"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>
+        </ul>
+        <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-chevron-left"></i></button>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Sistema de Validação</h2>
+            </div>
+            <div class="card-body">
+                <p>Este exemplo demonstra o uso do sistema de validação de dados e o gerenciamento de tema.</p>
+                
+                <div class="form-container">
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <label for="name">Nome</label>
+                            <input type="text" id="name" class="form-control" placeholder="Seu nome">
+                            <div id="name-error" class="error-message"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" class="form-control" placeholder="seu@email.com">
+                            <div id="email-error" class="error-message"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message">Mensagem</label>
+                            <textarea id="message" class="form-control" rows="4" placeholder="Digite sua mensagem"></textarea>
+                            <div id="message-error" class="error-message"></div>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="button primary">Enviar</button>
+                            <button type="reset" class="button secondary">Limpar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Botão de alternância de tema -->
+    <button class="theme-toggle" id="theme-toggle" title="Alternar tema">
+        <i class="fas fa-moon dark-icon"></i>
+        <i class="fas fa-sun light-icon" style="display: none;"></i>
+    </button>
+    
+    <!-- Área de notificação -->
+    <div id="notification" class="notification"></div>
+    
+    <!-- Importar Font Awesome -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
+    <!-- Scripts da aplicação -->
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/form-validation.js"></script>
+    
+    <script type="module">
+        // Script inline para demonstração
+        import { initTheme } from './js/utils/themeManager.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializa o gerenciador de tema
+            initTheme();
+            
+            // Exemplo de manipulação da barra lateral
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    document.querySelector('.sidebar').classList.toggle('collapsed');
+                    document.querySelector('.main-content').classList.toggle('expanded');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <!-- ...existing code... -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Notificações</title>
+</head>
+<body>
+  <h1>Sistema de Notificações</h1>
+  <ul id="notifications">
+    <!-- ...existing code... -->
+  </ul>
+
+  <!-- Inclusão da biblioteca Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Conecta com o servidor Socket.IO
+    const socket = io();
+    
+    // Recebe notificações e atualiza a lista
+    socket.on('notification', (data) => {
+      const li = document.createElement('li');
+      li.textContent = `${data.message} - ${new Date(data.timestamp).toLocaleTimeString()}`;
+      document.getElementById('notifications').appendChild(li);
+    });
+  </script>
+</body>
+</html>

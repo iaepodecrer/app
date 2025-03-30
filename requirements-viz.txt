@@ -1,0 +1,7 @@
+# Dependências para visualizações avançadas (D3.js, Plotly, Vega)
+plotly
+pandas
+numpy
+networkx
+vega
+altair
